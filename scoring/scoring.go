@@ -6,7 +6,6 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/open-fresh/data-sidecar/scoring/anomaly"
 	"github.com/open-fresh/data-sidecar/storage"
 	"github.com/open-fresh/data-sidecar/util"
 	"github.com/prometheus/client_golang/prometheus"
@@ -79,30 +78,30 @@ func ModelTimer(name string, model func()) {
 
 // ScoreItem scores individual time series
 func ScoreItem(labels map[string]string, destination util.Recorder, store util.StorageEngine) {
-	data := store.Get(labels)
+	// data := store.Get(labels)
 
-	if (data == nil) || (len(data) <= 1) {
-		return
-	}
+	// if (data == nil) || (len(data) <= 1) {
+	// 	return
+	// }
 
-	currentValue := data[len(data)-1]
-	ModelTimer("highway", func() {
-		Highway(currentValue, data, labels, destination, store)
-	})
-	lookbackPoints := 30
-	if len(data) <= lookbackPoints {
-		lookbackPoints = len(data) - 1
-	}
-	vals := make([]float64, lookbackPoints, lookbackPoints)
-	for ii := range vals {
-		vals[ii] = data[ii].Val
-	}
-	ModelTimer("nelsonRules", func() {
-		anoms := anomaly.Nelson(vals, labels)
-		for _, x := range anoms {
-			destination.Record(util.Metric{Desc: x, Data: util.DataPoint{Val: 1.0, Time: currentValue.Time}})
-		}
-	})
+	// currentValue := data[len(data)-1]
+	// ModelTimer("highway", func() {
+	// 	Highway(currentValue, data, labels, destination, store)
+	// })
+	// lookbackPoints := 30
+	// if len(data) <= lookbackPoints {
+	// 	lookbackPoints = len(data) - 1
+	// }
+	// vals := make([]float64, lookbackPoints, lookbackPoints)
+	// for ii := range vals {
+	// 	vals[ii] = data[ii].Val
+	// }
+	// ModelTimer("nelsonRules", func() {
+	// 	anoms := anomaly.Nelson(vals, labels)
+	// 	for _, x := range anoms {
+	// 		destination.Record(util.Metric{Desc: x, Data: util.DataPoint{Val: 1.0, Time: currentValue.Time}})
+	// 	}
+	// })
 }
 
 // ScoreOutput will help marshal scoring output.

@@ -69,12 +69,21 @@
   pruneopts = "UT"
   revision = "05ee40e3a273f7245e8777337fc7b46e533a9a92"
 
+[[projects]]
+  digest = "1:63a9cf2b613895b357fb31fe529e7055f0606cdb07b976f9c5331663d7658d69"
+  name = "github.com/tensorflow/tensorflow"
+  packages = ["tensorflow/go"]
+  pruneopts = "UT"
+  revision = "c19e29306ce1777456b2dbb3a14f511edf7883a8"
+  version = "v1.11.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/common/expfmt",
+    "github.com/tensorflow/tensorflow/tensorflow/go",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

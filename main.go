@@ -14,6 +14,7 @@ import (
 	"github.com/open-fresh/data-sidecar/icarus"
 	"github.com/open-fresh/data-sidecar/prom"
 	"github.com/open-fresh/data-sidecar/scoring"
+	"github.com/open-fresh/data-sidecar/scoring/tf"
 	"github.com/open-fresh/data-sidecar/storage"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -42,6 +43,7 @@ var (
 	lookback   = flag.Int("lookback", 60, "empirical lookback window (minutes)")
 	prefix     = flag.String("pfx", "ft_", "export prefix for metrics")
 	version    = "undefined"
+	tfpath     = flag.String("tfpath", "", "colon separated list of directory paths containing tensorflow models to execute")
 )
 
 func init() {
@@ -81,11 +83,18 @@ func main() {
 	mux.HandleFunc("/dump", Monitor(seriesCollection.DumpHandleFunc))
 	remote := icarus.NewIcarus(*prefix)
 	mux.HandleFunc("/metrics", Monitor(remote.HandleFunc))
-	scorer := scoring.NewScorer(seriesCollection, remote)
 
+	scorer := scoring.NewScorer(seriesCollection, remote)
 	mux.HandleFunc("/score", Monitor(scorer.ScoreHandleFunc))
 
-	promClient := prom.NewClient(*p8s, *resolution, *lookback, scorer)
+	tfModels, err := tf.LoadModels(*tfpath)
+	if err != nil {
+		log.Fatalf("failed to load tensorflow models: %v", err)
+	}
+	tfMaxPoints := (*lookback / (*resolution / 60)) + 1
+	tfScorer := tf.NewScorer(tfMaxPoints, tfModels, remote)
+
+	promClient := prom.NewClient(*p8s, *resolution, *lookback, scorer, tfScorer)
 	log.Println(promClient.Status())
 	promClient.Start()
 	hygeineTicker := ticker(time.Duration(*cleanup)*time.Second + time.Microsecond)

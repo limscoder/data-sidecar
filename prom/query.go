@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-fresh/data-sidecar/scoring/tf"
+
 	"github.com/open-fresh/data-sidecar/util"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -39,6 +41,7 @@ var (
 type Client struct {
 	*sync.Mutex
 	Store    util.ScoringEngine
+	TfScorer *tf.Scorer
 	P8s      string
 	Res      int
 	Lookback int
@@ -74,12 +77,12 @@ func init() {
 }
 
 // NewClient builds a prometheus client.
-func NewClient(p8s string, res, lbk int, store util.ScoringEngine) *Client {
+func NewClient(p8s string, res, lbk int, store util.ScoringEngine, tfScorer *tf.Scorer) *Client {
 	var mux sync.Mutex
 	client, _ := httpClient()
 	start := int(time.Now().Unix()) - lbk*60
 	end := int(time.Now().Unix())
-	return &Client{&mux, store, p8s, res, lbk, start, end, client, make(map[string]bool), false}
+	return &Client{&mux, store, tfScorer, p8s, res, lbk, start, end, client, make(map[string]bool), false}
 }
 
 // HTTPClient generates an http client from the configuration
@@ -188,6 +191,7 @@ func (c *Client) RangeInsert(result RangeQ) {
 		}
 		if len(mydata) > 0 {
 			c.Store.ScoreData(mydata, xx.Metric, true)
+			c.TfScorer.Append(xx.Metric, mydata)
 		}
 	}
 }
@@ -205,6 +209,7 @@ func (c *Client) RangeBatch() {
 		series, _ := DecodeRangeQ(resp)
 		c.RangeInsert(series)
 	}
+	c.TfScorer.ScoreModels()
 }
 
 // queryExtract pulls the query endpoint out of the query string. With short=false, it includes the name.
